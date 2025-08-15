@@ -3,20 +3,27 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // Game objects
-const hoop = { x: canvas.width / 2 - 40, y: 50, width: 80, height: 10 };
+// Side view: hoop on right, players start left
+// Game objects (side view, two hoops)
+const hoops = [
+	{ x: 60, y: 320, width: 10, height: 80, rimY: 340 }, // left hoop
+	{ x: canvas.width - 100, y: 320, width: 10, height: 80, rimY: 340 } // right hoop
+];
 const players = [
-	{ x: 150, y: 400, w: 40, h: 40, color: '#ff4444', ball: null, score: 0 }, // Player 1
-	{ x: 650, y: 400, w: 40, h: 40, color: '#4488ff', ball: null, score: 0 }  // Player 2
+	{ x: 120, y: 400, w: 32, h: 64, color: '#ff4444', ball: null, score: 0, facing: 1, hoopIdx: 1 }, // Player 1 shoots right
+	{ x: canvas.width - 180, y: 400, w: 32, h: 64, color: '#4488ff', ball: null, score: 0, facing: -1, hoopIdx: 0 }  // Player 2 shoots left
 ];
 
 // Ball properties
 function createBall(playerIdx) {
+	// Ball starts at player's hand, moves in an arc toward their hoop
+	let direction = players[playerIdx].hoopIdx === 1 ? 1 : -1;
 	return {
-		x: players[playerIdx].x + players[playerIdx].w / 2,
-		y: players[playerIdx].y,
+		x: players[playerIdx].x + (direction === 1 ? players[playerIdx].w : 0),
+		y: players[playerIdx].y + 20,
 		radius: 12,
-		vy: -8,
-		vx: 0,
+		vy: -7,
+		vx: 7 * direction,
 		active: true,
 		player: playerIdx
 	};
@@ -39,10 +46,10 @@ function update() {
 	if (keys['ArrowUp']) players[1].y -= 5;
 	if (keys['ArrowDown']) players[1].y += 5;
 
-	// Boundaries
+	// Boundaries (side view)
 	players.forEach(p => {
 		p.x = Math.max(0, Math.min(canvas.width - p.w, p.x));
-		p.y = Math.max(hoop.y + hoop.height + 10, Math.min(canvas.height - p.h, p.y));
+		p.y = Math.max(320, Math.min(canvas.height - p.h, p.y));
 	});
 
 	// Shooting
@@ -53,17 +60,19 @@ function update() {
 		players[1].ball = createBall(1);
 	}
 
-	// Ball movement
+	// Ball movement (side view, two hoops)
 	players.forEach((p, idx) => {
 		if (p.ball && p.ball.active) {
 			p.ball.y += p.ball.vy;
 			p.ball.x += p.ball.vx;
 			p.ball.vy += 0.3; // gravity
-			// Check for hoop
+			// Check for correct hoop
+			const hoop = hoops[p.hoopIdx];
 			if (
-				p.ball.y - p.ball.radius < hoop.y + hoop.height &&
-				p.ball.x > hoop.x && p.ball.x < hoop.x + hoop.width &&
-				p.ball.y > hoop.y
+				p.ball.x + p.ball.radius > hoop.x &&
+				p.ball.x - p.ball.radius < hoop.x + hoop.width + 20 &&
+				p.ball.y + p.ball.radius > hoop.rimY &&
+				p.ball.y - p.ball.radius < hoop.rimY + 10
 			) {
 				p.score++;
 				document.getElementById('score' + (idx + 1)).textContent = `Player ${idx + 1}: ${p.score}`;
@@ -80,52 +89,73 @@ function update() {
 
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	// Draw hoop
-	ctx.fillStyle = '#ffcc00';
-	ctx.fillRect(hoop.x, hoop.y, hoop.width, hoop.height);
-	ctx.strokeStyle = '#fff';
-	ctx.lineWidth = 4;
-	ctx.beginPath();
-	ctx.arc(hoop.x + hoop.width / 2, hoop.y + 5, 35, Math.PI, 0);
-	ctx.stroke();
-	// Draw players as cartoon basketball players
-	players.forEach((p, idx) => {
-		// Body
-		ctx.fillStyle = p.color;
-		ctx.fillRect(p.x + p.w/2 - 8, p.y + 18, 16, 24); // torso
-		// Head
+	// Draw court (floor)
+	ctx.fillStyle = '#deb887';
+	ctx.fillRect(0, 320 + 64, canvas.width, canvas.height - (320 + 64));
+	// Draw hoops (side view, both sides)
+	hoops.forEach(hoop => {
+		ctx.strokeStyle = '#888';
+		ctx.lineWidth = 8;
 		ctx.beginPath();
-		ctx.arc(p.x + p.w/2, p.y + 10, 10, 0, 2 * Math.PI);
-		ctx.fillStyle = '#fcd299'; // skin color
+		ctx.moveTo(hoop.x, hoop.y); // pole
+		ctx.lineTo(hoop.x, hoop.y + hoop.height);
+		ctx.stroke();
+		// Rim
+		ctx.strokeStyle = '#ffcc00';
+		ctx.lineWidth = 6;
+		ctx.beginPath();
+		ctx.moveTo(hoop.x, hoop.rimY);
+		ctx.lineTo(hoop.x + 30, hoop.rimY);
+		ctx.stroke();
+		// Net
+		ctx.strokeStyle = '#fff';
+		ctx.lineWidth = 2;
+		for (let i = 0; i < 5; i++) {
+			ctx.beginPath();
+			ctx.moveTo(hoop.x + 6 * i, hoop.rimY);
+			ctx.lineTo(hoop.x + 6 * i, hoop.rimY + 18);
+			ctx.stroke();
+		}
+	});
+	// Draw players (side view)
+	players.forEach((p, idx) => {
+		// Body (torso)
+		ctx.fillStyle = p.color;
+		ctx.fillRect(p.x + 8, p.y + 24, 16, 28);
+		// Head (profile)
+		ctx.beginPath();
+		ctx.arc(p.x + 16, p.y + 16, 12, Math.PI * 0.1, Math.PI * 1.9);
+		ctx.fillStyle = '#fcd299';
 		ctx.fill();
 		ctx.strokeStyle = '#333';
 		ctx.stroke();
-		// Arms
+		// Arm (front, shooting)
 		ctx.strokeStyle = '#fcd299';
 		ctx.lineWidth = 5;
 		ctx.beginPath();
-		ctx.moveTo(p.x + p.w/2 - 8, p.y + 24); // left shoulder
-		ctx.lineTo(p.x + p.w/2 - 18, p.y + 38); // left hand
+		ctx.moveTo(p.x + 24, p.y + 32);
+		ctx.lineTo(p.x + 36, p.y + 20);
 		ctx.stroke();
+		// Arm (back)
 		ctx.beginPath();
-		ctx.moveTo(p.x + p.w/2 + 8, p.y + 24); // right shoulder
-		ctx.lineTo(p.x + p.w/2 + 18, p.y + 38); // right hand
+		ctx.moveTo(p.x + 8, p.y + 32);
+		ctx.lineTo(p.x - 4, p.y + 20);
 		ctx.stroke();
 		// Legs
-		ctx.strokeStyle = idx === 0 ? '#ff4444' : '#4488ff';
-		ctx.lineWidth = 6;
+		ctx.strokeStyle = p.color;
+		ctx.lineWidth = 7;
 		ctx.beginPath();
-		ctx.moveTo(p.x + p.w/2 - 5, p.y + 42); // left hip
-		ctx.lineTo(p.x + p.w/2 - 5, p.y + p.h); // left foot
+		ctx.moveTo(p.x + 14, p.y + 52);
+		ctx.lineTo(p.x + 14, p.y + p.h);
 		ctx.stroke();
 		ctx.beginPath();
-		ctx.moveTo(p.x + p.w/2 + 5, p.y + 42); // right hip
-		ctx.lineTo(p.x + p.w/2 + 5, p.y + p.h); // right foot
+		ctx.moveTo(p.x + 18, p.y + 52);
+		ctx.lineTo(p.x + 18, p.y + p.h);
 		ctx.stroke();
 		// Jersey number
 		ctx.fillStyle = '#fff';
 		ctx.font = 'bold 12px Arial';
-		ctx.fillText(idx + 1, p.x + p.w/2 - 4, p.y + 36);
+		ctx.fillText(idx + 1, p.x + 13, p.y + 44);
 	});
 	// Draw balls
 	players.forEach(p => {
