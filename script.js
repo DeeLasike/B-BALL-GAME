@@ -88,10 +88,44 @@ function draw() {
 	ctx.beginPath();
 	ctx.arc(hoop.x + hoop.width / 2, hoop.y + 5, 35, Math.PI, 0);
 	ctx.stroke();
-	// Draw players
-	players.forEach(p => {
+	// Draw players as cartoon basketball players
+	players.forEach((p, idx) => {
+		// Body
 		ctx.fillStyle = p.color;
-		ctx.fillRect(p.x, p.y, p.w, p.h);
+		ctx.fillRect(p.x + p.w/2 - 8, p.y + 18, 16, 24); // torso
+		// Head
+		ctx.beginPath();
+		ctx.arc(p.x + p.w/2, p.y + 10, 10, 0, 2 * Math.PI);
+		ctx.fillStyle = '#fcd299'; // skin color
+		ctx.fill();
+		ctx.strokeStyle = '#333';
+		ctx.stroke();
+		// Arms
+		ctx.strokeStyle = '#fcd299';
+		ctx.lineWidth = 5;
+		ctx.beginPath();
+		ctx.moveTo(p.x + p.w/2 - 8, p.y + 24); // left shoulder
+		ctx.lineTo(p.x + p.w/2 - 18, p.y + 38); // left hand
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(p.x + p.w/2 + 8, p.y + 24); // right shoulder
+		ctx.lineTo(p.x + p.w/2 + 18, p.y + 38); // right hand
+		ctx.stroke();
+		// Legs
+		ctx.strokeStyle = idx === 0 ? '#ff4444' : '#4488ff';
+		ctx.lineWidth = 6;
+		ctx.beginPath();
+		ctx.moveTo(p.x + p.w/2 - 5, p.y + 42); // left hip
+		ctx.lineTo(p.x + p.w/2 - 5, p.y + p.h); // left foot
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(p.x + p.w/2 + 5, p.y + 42); // right hip
+		ctx.lineTo(p.x + p.w/2 + 5, p.y + p.h); // right foot
+		ctx.stroke();
+		// Jersey number
+		ctx.fillStyle = '#fff';
+		ctx.font = 'bold 12px Arial';
+		ctx.fillText(idx + 1, p.x + p.w/2 - 4, p.y + 36);
 	});
 	// Draw balls
 	players.forEach(p => {
