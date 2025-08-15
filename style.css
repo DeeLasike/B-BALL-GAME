@@ -1,0 +1,27 @@
+body {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	background: #1a1a1a;
+	color: #fff;
+	font-family: Arial, sans-serif;
+	text-align: center;
+}
+
+.instructions {
+	margin-bottom: 20px;
+	font-size: 18px;
+}
+
+#gameCanvas {
+	background: #2e8b57;
+	display: block;
+	margin: 0 auto 20px auto;
+	border: 4px solid #fff;
+	border-radius: 10px;
+}
+
+#scoreboard {
+	font-size: 22px;
+	margin-bottom: 20px;
+}
