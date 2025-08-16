@@ -52,12 +52,12 @@ function update() {
 		players[1].onGround = false;
 	}
 
-	// Gravity and vertical movement
+	// Gravity and vertical movement (land in same spot)
 	players.forEach(p => {
 		if (!p.onGround) {
 			p.vy += 0.7; // gravity
 			p.y += p.vy;
-			// Ground collision
+			// Ground collision: land where you jumped from
 			if (p.y >= canvas.height - p.h) {
 				p.y = canvas.height - p.h;
 				p.vy = 0;
@@ -110,6 +110,53 @@ function update() {
 
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	// Draw animated crowd above the court
+	const crowdY = 80;
+	const crowdHeight = 60;
+	const crowdCount = Math.floor(canvas.width / 32);
+	const t = Date.now() / 400;
+	for (let i = 0; i < crowdCount; i++) {
+		const x = i * 32 + 16;
+		// Animate arm wave
+		const armAngle = Math.sin(t + i) * 0.7;
+		// Animate shirt color
+		const shirtColor = `hsl(${(i * 30 + t * 60) % 360}, 70%, 55%)`;
+		// Body
+		ctx.fillStyle = shirtColor;
+		ctx.fillRect(x - 8, crowdY + 18, 16, 24);
+		// Head
+		ctx.beginPath();
+		ctx.arc(x, crowdY + 10, 10, 0, 2 * Math.PI);
+		ctx.fillStyle = '#fcd299';
+		ctx.fill();
+		ctx.strokeStyle = '#333';
+		ctx.stroke();
+		// Left arm
+		ctx.save();
+		ctx.translate(x - 8, crowdY + 24);
+		ctx.rotate(-armAngle);
+		ctx.strokeStyle = '#fcd299';
+		ctx.lineWidth = 5;
+		ctx.beginPath();
+		ctx.moveTo(0, 0);
+		ctx.lineTo(-14, -14);
+		ctx.stroke();
+		ctx.restore();
+		// Right arm
+		ctx.save();
+		ctx.translate(x + 8, crowdY + 24);
+		ctx.rotate(armAngle);
+		ctx.strokeStyle = '#fcd299';
+		ctx.lineWidth = 5;
+		ctx.beginPath();
+		ctx.moveTo(0, 0);
+		ctx.lineTo(14, -14);
+		ctx.stroke();
+		ctx.restore();
+	}
+
+	// ...existing code for court and gameplay...
 	// Draw court (floor)
 	const courtY = 320 + 64;
 	const courtHeight = canvas.height - courtY;
@@ -133,28 +180,40 @@ function draw() {
 	ctx.moveTo(0, courtY);
 	ctx.lineTo(canvas.width, courtY);
 	ctx.stroke();
-	// Key/paint areas (both sides)
-	// Left key
-	ctx.strokeRect(60, canvas.height - 180, 60, 120);
-	// Right key
-	ctx.strokeRect(canvas.width - 120, canvas.height - 180, 60, 120);
-	// Free throw circles
+	// Key/paint areas (both sides, facing center)
+	// Left key (open to right)
 	ctx.beginPath();
-	ctx.arc(90, canvas.height - 180, 30, 0, 2 * Math.PI);
+	ctx.moveTo(60, canvas.height - 180);
+	ctx.lineTo(120, canvas.height - 180);
+	ctx.lineTo(120, canvas.height - 60);
+	ctx.lineTo(60, canvas.height - 60);
+	ctx.closePath();
+	ctx.stroke();
+	// Right key (open to left)
+	ctx.beginPath();
+	ctx.moveTo(canvas.width - 120, canvas.height - 180);
+	ctx.lineTo(canvas.width - 60, canvas.height - 180);
+	ctx.lineTo(canvas.width - 60, canvas.height - 60);
+	ctx.lineTo(canvas.width - 120, canvas.height - 60);
+	ctx.closePath();
+	ctx.stroke();
+	// Free throw arcs (facing center)
+	ctx.beginPath();
+	ctx.arc(120, canvas.height - 120, 30, Math.PI * 1.5, Math.PI * 0.5, false);
 	ctx.stroke();
 	ctx.beginPath();
-	ctx.arc(canvas.width - 90, canvas.height - 180, 30, 0, 2 * Math.PI);
+	ctx.arc(canvas.width - 120, canvas.height - 120, 30, Math.PI * 0.5, Math.PI * 1.5, false);
 	ctx.stroke();
 	// Center circle
 	ctx.beginPath();
 	ctx.arc(canvas.width / 2, canvas.height - 120, 50, 0, 2 * Math.PI);
 	ctx.stroke();
-	// Three-point arcs
+	// Three-point arcs (facing center)
 	ctx.beginPath();
-	ctx.arc(90, canvas.height - 120, 90, Math.PI * 0.7, Math.PI * 2.3);
+	ctx.arc(120, canvas.height - 120, 90, Math.PI * 1.2, Math.PI * 1.8, false);
 	ctx.stroke();
 	ctx.beginPath();
-	ctx.arc(canvas.width - 90, canvas.height - 120, 90, Math.PI * 0.7, Math.PI * 2.3);
+	ctx.arc(canvas.width - 120, canvas.height - 120, 90, Math.PI * -0.8, Math.PI * -0.2, false);
 	ctx.stroke();
 	ctx.restore();
 	// Draw hoops (side view, both sides)
