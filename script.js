@@ -2,6 +2,46 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Start screen logic
+const startScreen = document.getElementById('startScreen');
+const gameUI = document.getElementById('gameUI');
+const btn1p = document.getElementById('btn1p');
+const btn2p = document.getElementById('btn2p');
+const btnTraining = document.getElementById('btnTraining');
+const instructions = document.getElementById('instructions');
+const scoreboard = document.getElementById('scoreboard');
+let gameMode = null;
+
+function startGame(mode) {
+	gameMode = mode;
+	startScreen.style.display = 'none';
+	gameUI.style.display = '';
+	if (mode === '1p') {
+		instructions.innerHTML = '<p><strong>Player 1:</strong> Move: W/A/S/D | Shoot: Space</p>';
+		scoreboard.innerHTML = '<span id="score1">Player 1: 0</span>';
+	} else if (mode === '2p') {
+		instructions.innerHTML = '<p><strong>Player 1:</strong> Move: W/A/S/D | Shoot: Space</p><p><strong>Player 2:</strong> Move: Arrow Keys | Shoot: Enter</p>';
+		scoreboard.innerHTML = '<span id="score1">Player 1: 0</span> | <span id="score2">Player 2: 0</span>';
+	} else if (mode === 'training') {
+		instructions.innerHTML = '<p><strong>Training:</strong> Move: W/A/S/D | Shoot: Space</p>';
+		scoreboard.innerHTML = '<span id="score1">Training</span>';
+	}
+	// Reset scores and game state if needed
+	players[0].score = 0;
+	if (players[1]) players[1].score = 0;
+	if (document.getElementById('score1')) document.getElementById('score1').textContent = 'Player 1: 0';
+	if (document.getElementById('score2')) document.getElementById('score2').textContent = 'Player 2: 0';
+	// Start game loop
+	gameLoop();
+}
+
+btn1p.onclick = () => startGame('1p');
+btn2p.onclick = () => startGame('2p');
+btnTraining.onclick = () => startGame('training');
+
+// Hide game UI initially
+gameUI.style.display = 'none';
+
 // Game objects
 // Side view: hoop on right, players start left
 // Game objects (side view, two hoops)
@@ -52,14 +92,17 @@ function update() {
 		players[1].onGround = false;
 	}
 
-	// Gravity and vertical movement (land in same spot)
+	// Gravity and vertical movement (land on middle of tan court)
+	const courtY = 320 + 64;
+	const courtHeight = canvas.height - courtY;
+	const middleCourtY = courtY + courtHeight / 2 - players[0].h / 2;
 	players.forEach(p => {
 		if (!p.onGround) {
 			p.vy += 0.7; // gravity
 			p.y += p.vy;
-			// Ground collision: land where you jumped from
+			// Ground collision: always land on middle of tan court
 			if (p.y >= canvas.height - p.h) {
-				p.y = canvas.height - p.h;
+				p.y = middleCourtY;
 				p.vy = 0;
 				p.onGround = true;
 			}

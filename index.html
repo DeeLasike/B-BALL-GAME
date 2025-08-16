@@ -4,14 +4,22 @@
 	<link rel="stylesheet" href="style.css">
 </head>
 <body>
-	<h1>2 Player Basketball Game</h1>
-	<div class="instructions">
-		<p><strong>Player 1:</strong> Move: W/A/S/D | Shoot: Space</p>
-		<p><strong>Player 2:</strong> Move: Arrow Keys | Shoot: Enter</p>
+	<div id="startScreen">
+		<h1>B-BALL GAME</h1>
+		<button id="btn1p">1 Player</button>
+		<button id="btn2p">2 Players</button>
+		<button id="btnTraining">Training</button>
 	</div>
-	<canvas id="gameCanvas" width="800" height="500"></canvas>
-	<div id="scoreboard">
-		<span id="score1">Player 1: 0</span> | <span id="score2">Player 2: 0</span>
+	<div id="gameUI" style="display:none;">
+		<h1 id="gameTitle">Basketball Game</h1>
+		<div class="instructions" id="instructions">
+			<p><strong>Player 1:</strong> Move: W/A/S/D | Shoot: Space</p>
+			<p><strong>Player 2:</strong> Move: Arrow Keys | Shoot: Enter</p>
+		</div>
+		<canvas id="gameCanvas" width="800" height="500"></canvas>
+		<div id="scoreboard">
+			<span id="score1">Player 1: 0</span> | <span id="score2">Player 2: 0</span>
+		</div>
 	</div>
 	<script src="script.js"></script>
 </body>
