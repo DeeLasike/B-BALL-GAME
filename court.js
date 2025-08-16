@@ -1,0 +1,73 @@
+// Court and hoop drawing functions
+function drawCourt(ctx, canvas, hoops) {
+	const courtY = 320 + 64;
+	const courtHeight = canvas.height - courtY;
+	ctx.fillStyle = '#deb887';
+	ctx.fillRect(0, courtY, canvas.width, courtHeight);
+	ctx.save();
+	ctx.beginPath();
+	ctx.rect(0, courtY, canvas.width, courtHeight);
+	ctx.clip();
+	ctx.strokeStyle = '#fff';
+	ctx.lineWidth = 3;
+	ctx.beginPath();
+	ctx.moveTo(0, canvas.height - 1);
+	ctx.lineTo(canvas.width, canvas.height - 1);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(0, courtY);
+	ctx.lineTo(canvas.width, courtY);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(60, canvas.height - 180);
+	ctx.lineTo(120, canvas.height - 180);
+	ctx.lineTo(120, canvas.height - 60);
+	ctx.lineTo(60, canvas.height - 60);
+	ctx.closePath();
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(canvas.width - 120, canvas.height - 180);
+	ctx.lineTo(canvas.width - 60, canvas.height - 180);
+	ctx.lineTo(canvas.width - 60, canvas.height - 60);
+	ctx.lineTo(canvas.width - 120, canvas.height - 60);
+	ctx.closePath();
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(120, canvas.height - 120, 30, Math.PI * 1.5, Math.PI * 0.5, false);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(canvas.width - 120, canvas.height - 120, 30, Math.PI * 0.5, Math.PI * 1.5, false);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(canvas.width / 2, canvas.height - 120, 50, 0, 2 * Math.PI);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(120, canvas.height - 120, 90, Math.PI * 1.2, Math.PI * 1.8, false);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(canvas.width - 120, canvas.height - 120, 90, Math.PI * -0.8, Math.PI * -0.2, false);
+	ctx.stroke();
+	ctx.restore();
+	hoops.forEach(hoop => {
+		ctx.strokeStyle = '#888';
+		ctx.lineWidth = 8;
+		ctx.beginPath();
+		ctx.moveTo(hoop.x, hoop.y);
+		ctx.lineTo(hoop.x, hoop.y + hoop.height);
+		ctx.stroke();
+		ctx.strokeStyle = '#ffcc00';
+		ctx.lineWidth = 6;
+		ctx.beginPath();
+		ctx.moveTo(hoop.x, hoop.rimY);
+		ctx.lineTo(hoop.x + 30, hoop.rimY);
+		ctx.stroke();
+		ctx.strokeStyle = '#fff';
+		ctx.lineWidth = 2;
+		for (let i = 0; i < 5; i++) {
+			ctx.beginPath();
+			ctx.moveTo(hoop.x + 6 * i, hoop.rimY);
+			ctx.lineTo(hoop.x + 6 * i, hoop.rimY + 18);
+			ctx.stroke();
+		}
+	});
+}
