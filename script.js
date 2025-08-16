@@ -11,20 +11,19 @@ const btnTraining = document.getElementById('btnTraining');
 const instructions = document.getElementById('instructions');
 const scoreboard = document.getElementById('scoreboard');
 let gameMode = null;
+let botCooldown = 0;
 
 function startGame(mode) {
 	gameMode = mode;
 	startScreen.style.display = 'none';
 	gameUI.style.display = '';
 	if (mode === '1p') {
-		instructions.innerHTML = '<p><strong>Player 1:</strong> Move: W/A/S/D | Shoot: Space</p>';
-		scoreboard.innerHTML = '<span id="score1">Player 1: 0</span>';
+		scoreboard.innerHTML = '<span id="score1">Player 1: 0</span> | <span id="score2">Bot: 0</span>';
 	} else if (mode === '2p') {
-		instructions.innerHTML = '<p><strong>Player 1:</strong> Move: W/A/S/D | Shoot: Space</p><p><strong>Player 2:</strong> Move: Arrow Keys | Shoot: Enter</p>';
 		scoreboard.innerHTML = '<span id="score1">Player 1: 0</span> | <span id="score2">Player 2: 0</span>';
 	} else if (mode === 'training') {
-		instructions.innerHTML = '<p><strong>Training:</strong> Move: W/A/S/D | Shoot: Space</p>';
 		scoreboard.innerHTML = '<span id="score1">Training</span>';
+		players[1].x = -9999; // Move player 2 off screen
 	}
 	// Reset scores and game state if needed
 	players[0].score = 0;
@@ -83,13 +82,36 @@ function update() {
 		players[0].vy = -12;
 		players[0].onGround = false;
 	}
-	// Player 2: Arrow Keys
-	if (keys['ArrowLeft']) players[1].x -= 5;
-	if (keys['ArrowRight']) players[1].x += 5;
-	// Jump for Player 2
-	if (keys['ArrowUp'] && players[1].onGround) {
-		players[1].vy = -12;
-		players[1].onGround = false;
+
+	// Player 2: Human or Bot
+	if (gameMode === '2p') {
+		if (keys['ArrowLeft']) players[1].x -= 5;
+		if (keys['ArrowRight']) players[1].x += 5;
+		// Jump for Player 2
+		if (keys['ArrowUp'] && players[1].onGround) {
+			players[1].vy = -12;
+			players[1].onGround = false;
+		}
+	} else if (gameMode === '1p') {
+		// Simple bot logic: follow ball or player, jump and shoot
+		const bot = players[1];
+		const targetX = players[0].x;
+		if (Math.abs(bot.x - targetX) > 10) {
+			bot.x += bot.x < targetX ? 3 : -3;
+		}
+		// Bot jumps randomly if on ground
+		if (bot.onGround && Math.random() < 0.01) {
+			bot.vy = -12;
+			bot.onGround = false;
+		}
+		// Bot shoots if near hoop and not already shooting
+		if (!bot.ball && bot.x < 200 && bot.onGround && botCooldown <= 0) {
+			bot.ball = createBall(1);
+			botCooldown = 60; // cooldown frames
+		}
+		if (botCooldown > 0) botCooldown--;
+	} else if (gameMode === 'training') {
+		// Do nothing for player 2
 	}
 
 	// Gravity and vertical movement (land on middle of tan court)
@@ -120,7 +142,7 @@ function update() {
 	if (keys['Space'] && !players[0].ball) {
 		players[0].ball = createBall(0);
 	}
-	if (keys['Enter'] && !players[1].ball) {
+	if (gameMode === '2p' && keys['Enter'] && !players[1].ball) {
 		players[1].ball = createBall(1);
 	}
 
@@ -139,7 +161,15 @@ function update() {
 				p.ball.y - p.ball.radius < hoop.rimY + 10
 			) {
 				p.score++;
-				document.getElementById('score' + (idx + 1)).textContent = `Player ${idx + 1}: ${p.score}`;
+				if (gameMode === '1p') {
+					if (idx === 0) {
+						document.getElementById('score1').textContent = `Player 1: ${p.score}`;
+					} else {
+						document.getElementById('score2').textContent = `Bot: ${p.score}`;
+					}
+				} else {
+					document.getElementById('score' + (idx + 1)).textContent = `Player ${idx + 1}: ${p.score}`;
+				}
 				p.ball.active = false;
 			}
 			// Out of bounds
@@ -154,49 +184,68 @@ function update() {
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-	// Draw animated crowd above the court
-	const crowdY = 80;
-	const crowdHeight = 60;
-	const crowdCount = Math.floor(canvas.width / 32);
+	// Draw animated crowd above the court (multiple rows, with chairs)
+	const crowdRows = 3;
+	const crowdPerRow = Math.floor(canvas.width / 24);
 	const t = Date.now() / 400;
-	for (let i = 0; i < crowdCount; i++) {
-		const x = i * 32 + 16;
-		// Animate arm wave
-		const armAngle = Math.sin(t + i) * 0.7;
-		// Animate shirt color
-		const shirtColor = `hsl(${(i * 30 + t * 60) % 360}, 70%, 55%)`;
-		// Body
-		ctx.fillStyle = shirtColor;
-		ctx.fillRect(x - 8, crowdY + 18, 16, 24);
-		// Head
-		ctx.beginPath();
-		ctx.arc(x, crowdY + 10, 10, 0, 2 * Math.PI);
-		ctx.fillStyle = '#fcd299';
-		ctx.fill();
-		ctx.strokeStyle = '#333';
-		ctx.stroke();
-		// Left arm
-		ctx.save();
-		ctx.translate(x - 8, crowdY + 24);
-		ctx.rotate(-armAngle);
-		ctx.strokeStyle = '#fcd299';
-		ctx.lineWidth = 5;
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(-14, -14);
-		ctx.stroke();
-		ctx.restore();
-		// Right arm
-		ctx.save();
-		ctx.translate(x + 8, crowdY + 24);
-		ctx.rotate(armAngle);
-		ctx.strokeStyle = '#fcd299';
-		ctx.lineWidth = 5;
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(14, -14);
-		ctx.stroke();
-		ctx.restore();
+	for (let row = 0; row < crowdRows; row++) {
+		const yOffset = 80 - row * 32;
+		for (let i = 0; i < crowdPerRow; i++) {
+			const x = i * 24 + 12 + (row % 2) * 12;
+			// Animate arm wave
+			const armAngle = Math.sin(t + i + row) * 0.7;
+			// Animate shirt color
+			const shirtColor = `hsl(${(i * 30 + row * 60 + t * 60) % 360}, 70%, 55%)`;
+			// Chair
+			ctx.fillStyle = '#444';
+			ctx.fillRect(x - 10, yOffset + 38, 20, 10);
+			ctx.strokeStyle = '#222';
+			ctx.lineWidth = 2;
+			ctx.strokeRect(x - 10, yOffset + 38, 20, 10);
+			// Legs (draw first)
+			ctx.strokeStyle = shirtColor;
+			ctx.lineWidth = 7;
+			ctx.beginPath();
+			ctx.moveTo(x - 4, yOffset + 42);
+			ctx.lineTo(x - 4, yOffset + 52);
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.moveTo(x + 4, yOffset + 42);
+			ctx.lineTo(x + 4, yOffset + 52);
+			ctx.stroke();
+			// Body
+			ctx.fillStyle = shirtColor;
+			ctx.fillRect(x - 8, yOffset + 18, 16, 24);
+			// Left arm
+			ctx.save();
+			ctx.translate(x - 8, yOffset + 24);
+			ctx.rotate(-armAngle);
+			ctx.strokeStyle = '#fcd299';
+			ctx.lineWidth = 5;
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(-14, -14);
+			ctx.stroke();
+			ctx.restore();
+			// Right arm
+			ctx.save();
+			ctx.translate(x + 8, yOffset + 24);
+			ctx.rotate(armAngle);
+			ctx.strokeStyle = '#fcd299';
+			ctx.lineWidth = 5;
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(14, -14);
+			ctx.stroke();
+			ctx.restore();
+			// Head (draw last, in front)
+			ctx.beginPath();
+			ctx.arc(x, yOffset + 10, 10, 0, 2 * Math.PI);
+			ctx.fillStyle = '#fcd299';
+			ctx.fill();
+			ctx.strokeStyle = '#333';
+			ctx.stroke();
+		}
 	}
 
 	// ...existing code for court and gameplay...
@@ -286,6 +335,7 @@ function draw() {
 	});
 	// Draw players (side view)
 	players.forEach((p, idx) => {
+		if (gameMode === 'training' && idx === 1) return; // Hide player 2 in training
 		// Body (torso)
 		ctx.fillStyle = p.color;
 		ctx.fillRect(p.x + 8, p.y + 24, 16, 28);
