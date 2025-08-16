@@ -10,8 +10,8 @@ const hoops = [
 	{ x: canvas.width - 100, y: 320, width: 10, height: 80, rimY: 340 } // right hoop
 ];
 const players = [
-	{ x: 120, y: 400, w: 32, h: 64, color: '#ff4444', ball: null, score: 0, facing: 1, hoopIdx: 1 }, // Player 1 shoots right
-	{ x: canvas.width - 180, y: 400, w: 32, h: 64, color: '#4488ff', ball: null, score: 0, facing: -1, hoopIdx: 0 }  // Player 2 shoots left
+	{ x: 120, y: 400, w: 32, h: 64, color: '#ff4444', ball: null, score: 0, facing: 1, hoopIdx: 1, vy: 0, onGround: true }, // Player 1 shoots right
+	{ x: canvas.width - 180, y: 400, w: 32, h: 64, color: '#4488ff', ball: null, score: 0, facing: -1, hoopIdx: 0, vy: 0, onGround: true }  // Player 2 shoots left
 ];
 
 // Ball properties
@@ -38,17 +38,38 @@ function update() {
 	// Player 1: WASD
 	if (keys['KeyA']) players[0].x -= 5;
 	if (keys['KeyD']) players[0].x += 5;
-	if (keys['KeyW']) players[0].y -= 5;
-	if (keys['KeyS']) players[0].y += 5;
+	// Jump for Player 1
+	if (keys['KeyW'] && players[0].onGround) {
+		players[0].vy = -12;
+		players[0].onGround = false;
+	}
 	// Player 2: Arrow Keys
 	if (keys['ArrowLeft']) players[1].x -= 5;
 	if (keys['ArrowRight']) players[1].x += 5;
-	if (keys['ArrowUp']) players[1].y -= 5;
-	if (keys['ArrowDown']) players[1].y += 5;
+	// Jump for Player 2
+	if (keys['ArrowUp'] && players[1].onGround) {
+		players[1].vy = -12;
+		players[1].onGround = false;
+	}
+
+	// Gravity and vertical movement
+	players.forEach(p => {
+		if (!p.onGround) {
+			p.vy += 0.7; // gravity
+			p.y += p.vy;
+			// Ground collision
+			if (p.y >= canvas.height - p.h) {
+				p.y = canvas.height - p.h;
+				p.vy = 0;
+				p.onGround = true;
+			}
+		}
+	});
 
 	// Boundaries (side view)
 	players.forEach(p => {
 		p.x = Math.max(0, Math.min(canvas.width - p.w, p.x));
+		// Prevent going above the court
 		p.y = Math.max(320, Math.min(canvas.height - p.h, p.y));
 	});
 
@@ -90,8 +111,52 @@ function update() {
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	// Draw court (floor)
+	const courtY = 320 + 64;
+	const courtHeight = canvas.height - courtY;
 	ctx.fillStyle = '#deb887';
-	ctx.fillRect(0, 320 + 64, canvas.width, canvas.height - (320 + 64));
+	ctx.fillRect(0, courtY, canvas.width, courtHeight);
+
+	// Clip to court area for lines
+	ctx.save();
+	ctx.beginPath();
+	ctx.rect(0, courtY, canvas.width, courtHeight);
+	ctx.clip();
+	ctx.strokeStyle = '#fff';
+	ctx.lineWidth = 3;
+	// Baselines
+	ctx.beginPath();
+	ctx.moveTo(0, canvas.height - 1);
+	ctx.lineTo(canvas.width, canvas.height - 1);
+	ctx.stroke();
+	// Sidelines
+	ctx.beginPath();
+	ctx.moveTo(0, courtY);
+	ctx.lineTo(canvas.width, courtY);
+	ctx.stroke();
+	// Key/paint areas (both sides)
+	// Left key
+	ctx.strokeRect(60, canvas.height - 180, 60, 120);
+	// Right key
+	ctx.strokeRect(canvas.width - 120, canvas.height - 180, 60, 120);
+	// Free throw circles
+	ctx.beginPath();
+	ctx.arc(90, canvas.height - 180, 30, 0, 2 * Math.PI);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(canvas.width - 90, canvas.height - 180, 30, 0, 2 * Math.PI);
+	ctx.stroke();
+	// Center circle
+	ctx.beginPath();
+	ctx.arc(canvas.width / 2, canvas.height - 120, 50, 0, 2 * Math.PI);
+	ctx.stroke();
+	// Three-point arcs
+	ctx.beginPath();
+	ctx.arc(90, canvas.height - 120, 90, Math.PI * 0.7, Math.PI * 2.3);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc(canvas.width - 90, canvas.height - 120, 90, Math.PI * 0.7, Math.PI * 2.3);
+	ctx.stroke();
+	ctx.restore();
 	// Draw hoops (side view, both sides)
 	hoops.forEach(hoop => {
 		ctx.strokeStyle = '#888';
