@@ -185,13 +185,21 @@ function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 	// Draw animated crowd above the court (multiple rows, with chairs)
-	const crowdRows = 3;
-	const crowdPerRow = Math.floor(canvas.width / 24);
+	// Fill the green part with crowd
+	const courtY = 320 + 64;
+	const crowdSpacingX = 50; // more spread out horizontally
+	const crowdSpacingY = 28; // more spread out vertically
+	const backboardTop = hoops[0].y;
+	const crowdRows = Math.floor((backboardTop - 40) / crowdSpacingY);
+	const crowdPerRow = Math.floor(canvas.width / crowdSpacingX);
 	const t = Date.now() / 400;
+	const hoopMargin = 0;
 	for (let row = 0; row < crowdRows; row++) {
-		const yOffset = 80 - row * 32;
+		const yOffset = 40 + row * crowdSpacingY;
 		for (let i = 0; i < crowdPerRow; i++) {
-			const x = i * 24 + 12 + (row % 2) * 12;
+			const x = i * crowdSpacingX + 32 + (row % 2) * (crowdSpacingX / 2);
+			// Skip crowd members that would overlap with the left or right hoop
+			if (x < hoopMargin || x > canvas.width - hoopMargin) continue;
 			// Animate arm wave
 			const armAngle = Math.sin(t + i + row) * 0.7;
 			// Animate shirt color
@@ -250,7 +258,6 @@ function draw() {
 
 	// ...existing code for court and gameplay...
 	// Draw court (floor)
-	const courtY = 320 + 64;
 	const courtHeight = canvas.height - courtY;
 	ctx.fillStyle = '#deb887';
 	ctx.fillRect(0, courtY, canvas.width, courtHeight);
